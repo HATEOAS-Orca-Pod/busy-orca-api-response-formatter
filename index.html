@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Response Formatter</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #34495e;
+            --secondary-color: #ecf0f1;
+            --accent-color: #3498db;
+            --text-color: #2c3e50;
+            --error-color: #e74c3c;
+        }
+
+        body {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 1200px;
+            padding: 2rem;
+        }
+
+        .formatter-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+
+        textarea {
+            min-height: 200px;
+            font-family: monospace;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            margin-top: 0.5rem;
+        }
+
+        /* Focus styles for WCAG 2.2 AAA compliance */
+        *:focus {
+            outline: 3px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        /* High contrast text for WCAG 2.2 AAA compliance */
+        label {
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        /* Skip link for keyboard navigation */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--accent-color);
+            color: white;
+            padding: 8px;
+            z-index: 100;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    
+    <main id="main" class="container" role="main">
+        <h1 class="text-center mb-4">API Response Formatter</h1>
+        
+        <div class="formatter-container">
+            <form id="formatter-form">
+                <div class="mb-3">
+                    <label for="input-type" class="form-label">Input Format</label>
+                    <select class="form-select" id="input-type" aria-label="Select input format">
+                        <option value="json">JSON</option>
+                        <option value="xml">XML</option>
+                        <option value="yaml">YAML</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="input-text" class="form-label">Input Text</label>
+                    <textarea 
+                        class="form-control" 
+                        id="input-text" 
+                        rows="8"
+                        aria-label="Input text to format"
+                        aria-describedby="input-help"
+                    ></textarea>
+                    <div id="input-help" class="form-text">Paste your API response here</div>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary" aria-label="Format input">
+                        Format
+                    </button>
+                    <button type="button" class="btn btn-secondary ms-2" id="copy-btn" aria-label="Copy formatted output">
+                        Copy Output
+                    </button>
+                </div>
+
+                <div class="mb-3">
+                    <label for="output-text" class="form-label">Formatted Output</label>
+                    <textarea 
+                        class="form-control" 
+                        id="output-text" 
+                        rows="8" 
+                        readonly
+                        aria-label="Formatted output"
+                    ></textarea>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('formatter-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            formatInput();
+        });
+
+        document.getElementById('copy-btn').addEventListener('click', function() {
+            const outputText = document.getElementById('output-text');
+            outputText.select();
+            document.execCommand('copy');
+            
+            // Provide feedback for screen readers
+            const feedback = document.createElement('div');
+            feedback.setAttribute('role', 'alert');
+            feedback.textContent = 'Output copied to clipboard';
+            feedback.style.position = 'absolute';
+            feedback.style.left = '-9999px';
+            document.body.appendChild(feedback);
+            setTimeout(() => feedback.remove(), 3000);
+        });
+
+        function formatInput() {
+            const inputType = document.getElementById('input-type').value;
+            const inputText = document.getElementById('input-text').value;
+            const outputText = document.getElementById('output-text');
+            
+            try {
+                let formatted = '';
+                switch(inputType) {
+                    case 'json':
+                        formatted = JSON.stringify(JSON.parse(inputText), null, 2);
+                        break;
+                    case 'xml':
+                        // Basic XML formatting
+                        formatted = inputText.replace(/></g, '>\n<')
+                                           .replace(/\s+</g, '<')
+                                           .replace(/>\s+/g, '>');
+                        break;
+                    case 'yaml':
+                        // Basic YAML formatting
+                        formatted = inputText.split('\n')
+                                           .map(line => line.trim())
+                                           .join('\n');
+                        break;
+                }
+                outputText.value = formatted;
+                
+                // Announce success to screen readers
+                const successMsg = document.createElement('div');
+                successMsg.setAttribute('role', 'alert');
+                successMsg.textContent = 'Input formatted successfully';
+                successMsg.style.position = 'absolute';
+                successMsg.style.left = '-9999px';
+                document.body.appendChild(successMsg);
+                setTimeout(() => successMsg.remove(), 3000);
+            } catch (error) {
+                outputText.value = 'Error: Invalid input format';
+                
+                // Announce error to screen readers
+                const errorMsg = document.createElement('div');
+                errorMsg.setAttribute('role', 'alert');
+                errorMsg.textContent = 'Error: Invalid input format. Please check your input and try again.';
+                errorMsg.style.position = 'absolute';
+                errorMsg.style.left = '-9999px';
+                document.body.appendChild(errorMsg);
+                setTimeout(() => errorMsg.remove(), 3000);
+            }
+        }
+    </script>
+</body>
+</html>
